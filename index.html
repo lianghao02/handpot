@@ -6,478 +6,813 @@
     <title>虛擬手碟鼓練習 (Virtual Handpan)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 隱藏 Chrome/Safari 上的捲軸 */
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
-        .scrollbar-hide {
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
-        }
+        /* 隱藏捲軸 */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* 防止手機上的長按選取與縮放 */
         body {
-            touch-action: none;
+            touch-action: none; 
             user-select: none;
             -webkit-user-select: none;
             font-family: "Noto Sans TC", sans-serif;
-            background-color: #1a1a1a;
+            background-color: #111; 
             overflow: hidden;
         }
 
-        /* 手碟主體質感 */
+        .header-bg {
+             background-color: rgba(20, 20, 20, 0.8);
+             backdrop-filter: blur(8px);
+             -webkit-backdrop-filter: blur(8px);
+        }
+
+        /* --- 手碟本體：坡度與金屬質感 --- */
         .handpan-body {
-            background: radial-gradient(circle at 30% 30%, #4a4a4a, #1a1a1a);
+            /* 模擬圓頂坡度：中心亮(高)，邊緣暗(低) */
+            background: radial-gradient(circle at 40% 40%, #6e6e6e 0%, #3a3a3a 40%, #1f1f1f 85%, #0d0d0d 100%);
+            
             box-shadow: 
-                0 20px 50px rgba(0,0,0,0.8),
-                inset 0 10px 20px rgba(255,255,255,0.1);
+                0 25px 60px rgba(0, 0, 0, 0.9),       
+                inset 0 2px 3px rgba(255, 255, 255, 0.2), 
+                inset 0 -10px 20px rgba(0, 0, 0, 0.8);    
+                
             border-radius: 50%;
             position: relative;
             transition: transform 0.1s ease;
-            /* 尺寸由 JS 動態調整 */
+            z-index: 20; 
+            
+            width: 85vmin;
+            height: 85vmin;
+            max-width: 650px;
+            max-height: 650px;
         }
 
-        /* 音舌區域樣式 */
+        /* --- 音舌熱區：微調大小與立體感 --- */
         .note-field {
             position: absolute;
             border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, #555, #2a2a2a);
+            /* 預設顏色 (凹陷) */
+            background: linear-gradient(145deg, #2a2a2a, #3d3d3d);
             box-shadow: 
-                inset 1px 1px 3px rgba(255,255,255,0.15),
-                inset -2px -2px 5px rgba(0,0,0,0.6),
-                4px 4px 8px rgba(0,0,0,0.4);
+                inset 1px 1px 3px rgba(0, 0, 0, 0.9), 
+                inset -1px -1px 2px rgba(255, 255, 255, 0.05),
+                2px 2px 4px rgba(0, 0, 0, 0.4); 
+                
             cursor: pointer;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            color: rgba(255,255,255,0.9);
+            color: #fbbf24; 
             font-weight: bold;
             transition: all 0.05s;
             transform: translate(-50%, -50%);
-            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.9); 
             line-height: 1;
-            z-index: 5;
+            z-index: 25;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* 按鈕尺寸優化 */
-        .note-field.tone-field {
-            width: 19%;
-            height: 15%; /* 橢圓形 */
+        /* --- 周圍音符尺寸：22% (消除重疊) --- */
+        .note-field.tone-field { 
+            width: 22%; 
+            height: 22%; 
         }
 
-        /* 數字標籤樣式 */
-        .note-num {
-            font-size: 1.5rem;
-            color: #fbbf24;
-        }
+        .note-num { font-size: 1.6rem; color: #fbbf24; text-shadow: 0 0 10px rgba(251, 191, 36, 0.2); }
+        .note-name { font-size: 0.75rem; color: #888; margin-top: 2px; }
 
-        /* 音名標籤樣式 */
-        .note-name {
-            font-size: 0.75rem;
-            color: #9ca3af;
-            margin-top: 2px;
-        }
-
-        /* 中央 Ding 的樣式 */
+        /* --- 中央 Ding：凸起山丘感 --- */
         .ding {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 26%;
-            height: 26%;
+            position: absolute; top: 50%; left: 50%; 
+            width: 28%; height: 28%; 
             border-radius: 50%;
-            background: radial-gradient(circle at 40% 40%, #777, #222);
+            background: radial-gradient(circle at 30% 30%, #888, #222);
             box-shadow: 
-                0 5px 15px rgba(0,0,0,0.5),
-                inset 0 0 20px rgba(0,0,0,0.8);
-            z-index: 10;
+                0 10px 20px rgba(0,0,0,0.6), 
+                inset 0 1px 5px rgba(255,255,255,0.3);
+            z-index: 30;
         }
-        
-        .ding .note-num {
-            font-size: 2.2rem;
-        }
+        .ding .note-num { font-size: 2.4rem; color: #fff; }
+        .ding .note-name { color: #fbbf24; }
 
-        /* 敲擊時的視覺回饋 */
+        /* 點擊回饋 */
         .note-field.active, .ding.active {
-            background: radial-gradient(circle at 30% 30%, #888, #444);
             transform: translate(-50%, -50%) scale(0.96);
-            box-shadow: 
-                0 0 20px rgba(251, 191, 36, 0.3),
-                inset 0 0 5px rgba(0,0,0,0.9);
+            /* 點擊時顏色變淺 */
+            background: linear-gradient(145deg, #444, #555);
+            /* 點擊時外發光 */
+            box-shadow: inset 0 0 15px rgba(251, 191, 36, 0.4); 
+        }
+
+        /* 和弦輔助模式下，高亮的音符 */
+        .note-field.chord-highlight {
+            background: linear-gradient(145deg, #383838, #5a5a5a);
+            box-shadow: 0 0 10px #34d399, inset 0 0 8px rgba(52, 211, 163, 0.8);
+            transform: translate(-50%, -50%) scale(1.02);
+            transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+        }
+        .ding.chord-highlight {
+            box-shadow: 0 0 10px #34d399, inset 0 0 8px rgba(52, 211, 163, 0.8);
+            transform: translate(-50%, -50%) scale(1.02);
         }
         
-        .note-field.active .note-num, .ding.active .note-num {
+        .note-field.active .note-num {
             color: #fff;
-            text-shadow: 0 0 10px rgba(251, 191, 36, 0.8);
+            text-shadow: 0 0 15px #fbbf24; 
+        }
+        
+        .score-note { font-size: 1.25rem; line-height: 1.8; }
+        .playing-highlight {
+            color: #ef4444 !important; font-weight: 900 !important; transform: scale(1.2);
         }
 
-        /* 側邊欄記錄的單一音符樣式 */
-        .score-note {
-            font-size: 1.25rem; /* 降低字體，適應側邊欄 */
-            line-height: 1.8;
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #fbbf24;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
         }
 
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="h-screen w-screen flex flex-col items-center justify-between text-gray-200">
 
-    <!-- 上方控制面板 (Header) -->
-    <div class="w-full p-3 bg-gray-900/80 backdrop-blur-sm flex justify-between items-center z-20 shadow-lg shrink-0 h-[60px]">
+    <!-- Header -->
+    <div class="w-full p-3 header-bg flex justify-between items-center z-40 shadow-lg shrink-0 h-[60px]">
         <h1 class="text-lg font-bold text-amber-500 tracking-wider">Handpan <span class="text-xs text-gray-400 hidden sm:inline">D Kurd 10</span></h1>
-        
         <div class="flex gap-2">
-            <select id="scaleSelect" class="bg-gray-800 text-sm rounded px-3 py-1 border border-gray-700 focus:outline-none focus:border-amber-500">
-                <option value="d_minor_balanced">D Kurd 10 (標準配置)</option>
-            </select>
-            <button id="toggleLabels" class="bg-gray-700 hover:bg-gray-600 text-xs px-3 py-1 rounded transition">
+            <button id="toggleLabels" class="bg-gray-700 hover:bg-gray-600 text-xs px-3 py-1 rounded transition border border-gray-600">
                 隱藏標籤
             </button>
         </div>
     </div>
 
-    <!-- 核心內容區: 響應式佈局 (直立堆疊 / 橫置分割) -->
+    <!-- Body -->
     <div class="w-full flex-grow flex flex-col md:flex-row relative">
-        
-        <!-- 左側/中央: 手碟容器 (橫置佔 3/4 空間，直立佔全部剩餘空間) -->
+        <!-- Handpan Area -->
         <div id="handpan-container" class="flex-grow flex items-center justify-center relative overflow-hidden p-4 md:w-3/4">
-            
-            <!-- 背景光暈裝飾 -->
-            <div class="absolute inset-0 opacity-20 pointer-events-none">
-                <div class="absolute top-1/4 left-1/4 w-64 h-64 bg-amber-600/20 rounded-full blur-3xl"></div>
-                <div class="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-600/20 rounded-full blur-3xl"></div>
+            <!-- 背景氛圍光 -->
+            <div class="absolute inset-0 opacity-10 pointer-events-none">
+                <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-gray-100/10 rounded-full blur-[100px]"></div>
             </div>
-
-            <!-- 手碟本體 - 尺寸由 JS 動態計算 -->
+            
             <div id="handpan" class="handpan-body shrink-0">
-                <!-- 中心 Ding -->
-                <div class="ding note-field" data-note-index="0">
-                    <!-- 內容由 JS 動態生成 -->
-                </div>
-                <!-- 其他音符將由 JS 動態生成 -->
+                <div class="ding note-field" data-note-index="0"></div>
             </div>
         </div>
 
-        <!-- 右側/下方: 數字譜記錄區 -->
-        <!-- 直立模式下：佔滿寬度，最小高度 120px (min-h-[120px])，最大高度 25vh -->
-        <!-- 橫置模式下：佔 1/4 寬度，填滿高度 -->
-        <div id="record-sidebar" class="w-full md:w-1/4 md:flex-none p-4 bg-gray-900/90 backdrop-blur-md shadow-inner md:shadow-none 
-                                        min-h-[120px] max-h-[25vh] md:max-h-full flex flex-col shrink-0">
+        <!-- Sidebar / Bottom Bar -->
+        <div id="record-sidebar" class="w-full md:w-1/4 md:flex-none p-4 header-bg shadow-inner md:shadow-none 
+                                        min-h-[140px] max-h-[25vh] md:max-h-full flex flex-col shrink-0 border-t md:border-t-0 md:border-l border-gray-700 z-40">
             
-            <div class="flex justify-between items-end mb-2 border-b border-gray-700 pb-1 shrink-0">
-                <span class="text-xs text-amber-500 font-bold uppercase tracking-widest">數字譜記錄 Record</span>
-                <button id="clearRecord" class="text-[10px] bg-gray-700 hover:bg-gray-600 text-gray-200 px-2 py-0.5 rounded transition">
-                    清除 Clear
-                </button>
+            <!-- 和弦輔助區塊 -->
+            <div class="mb-3 border-b border-gray-700 pb-2">
+                <span class="text-xs text-emerald-400 font-bold uppercase tracking-widest">Chords (PDF Guide)</span>
+                <div id="chordList" class="flex flex-wrap gap-1 mt-1">
+                    <!-- Chords will be rendered here -->
+                </div>
+            </div>
+
+            <!-- 記錄控制區塊 -->
+            <div class="flex flex-wrap justify-between items-center mb-2 border-b border-gray-700 pb-2 gap-2 shrink-0">
+                <span class="text-xs text-amber-500 font-bold uppercase tracking-widest">Record</span>
+                
+                <div class="flex gap-2">
+                    <button id="saveCurrent" class="text-xs bg-yellow-600 hover:bg-yellow-500 text-black px-2 py-1 rounded flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span>💾</span> 儲存
+                    </button>
+                    <button id="openRecords" class="text-xs bg-gray-500 hover:bg-gray-400 text-white px-2 py-1 rounded flex items-center gap-1">
+                        <span>📖</span> 記錄列表
+                    </button>
+                </div>
             </div>
             
-            <!-- 記錄區塊 - 允許垂直捲動 (Landscape) 或水平捲動 (Portrait) -->
-            <div id="notationDisplay" class="font-mono tracking-wider text-white flex-grow overflow-auto whitespace-nowrap md:whitespace-normal scrollbar-hide">
-                <span class="text-gray-600 text-sm italic">點擊音階開始記錄...</span>
+            <!-- 記錄播放控制和匯出按鈕 -->
+            <div class="flex flex-wrap justify-between items-center mb-2 pb-2 gap-2 shrink-0">
+                <div class="flex gap-2">
+                    <button id="playRecord" class="text-xs bg-green-700 hover:bg-green-600 text-white px-2 py-1 rounded flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span>▶</span> 播放
+                    </button>
+                    <button id="exportWav" class="text-xs bg-purple-700 hover:bg-purple-600 text-white px-2 py-1 rounded flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span>📥</span> WAV
+                    </button>
+                    <button id="copyRecord" class="text-xs bg-blue-700 hover:bg-blue-600 text-white px-2 py-1 rounded flex items-center gap-1">
+                        <span>📋</span> 複製
+                    </button>
+                    <button id="clearRecord" class="text-xs bg-gray-700 hover:bg-gray-600 text-gray-200 px-2 py-1 rounded">
+                        清除
+                    </button>
+                </div>
+            </div>
+
+            <!-- 當前演奏樂譜顯示區 -->
+            <div id="notationDisplay" class="font-mono tracking-wider text-white flex-grow overflow-auto whitespace-nowrap md:whitespace-normal scrollbar-hide relative border-b border-gray-700 pb-2">
+                <span class="text-gray-500 text-sm italic absolute top-0 left-0">點擊音階開始記錄...</span>
             </div>
             
-            <!-- 提示資訊 -->
-            <p class="text-gray-500 text-[10px] mt-2 shrink-0">D3為D，A3為1 (正下方)</p>
+            <!-- 歷史記錄列表 (可切換顯示) -->
+            <div id="savedRecordsSection" class="mt-3 overflow-y-auto scrollbar-hide max-h-48 md:max-h-full transition-all duration-300 ease-in-out" style="max-height: 0; opacity: 0; pointer-events: none;">
+                 <h3 class="text-sm font-bold text-gray-400 mb-2 border-b border-gray-800 pb-1">歷史記錄</h3>
+                 <div id="savedRecordsList">
+                    <p class="text-xs text-gray-600">目前沒有儲存的記錄。</p>
+                 </div>
+            </div>
+
+            <p class="text-gray-600 text-[10px] mt-2 shrink-0 text-center w-full">Low Latency Audio Engine Active</p>
         </div>
     </div>
 
-    <!-- 啟動遮罩 -->
-    <div id="startOverlay" class="fixed inset-0 bg-black/90 flex flex-col items-center justify-center z-50 cursor-pointer">
+    <!-- Start Overlay -->
+    <div id="startOverlay" class="fixed inset-0 bg-black/95 flex flex-col items-center justify-center z-50 cursor-pointer touch-manipulation">
         <div class="text-amber-500 text-6xl mb-4 animate-pulse">♫</div>
-        <h2 class="text-2xl text-white font-bold mb-2">點擊畫面開始</h2>
-        <p class="text-gray-400 text-sm">啟動 D Kurd 10 手碟引擎</p>
+        <h2 class="text-2xl text-white font-bold mb-2">點擊啟用音效</h2>
+        <p class="text-gray-400 text-sm mb-8">啟動低延遲音訊引擎 (支援和弦演奏)</p>
+        <div class="text-xs text-gray-600 px-8 text-center">
+            若發生延遲，請使用有線耳機，並關閉省電模式。
+        </div>
+    </div>
+
+    <!-- Message Toast -->
+    <div id="toast" class="fixed top-20 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded shadow-lg text-sm transition-opacity opacity-0 pointer-events-none z-50">
+        訊息
+    </div>
+    
+    <!-- 載入中遮罩 -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black/70 flex flex-col items-center justify-center z-50 transition-opacity duration-300 opacity-0 pointer-events-none">
+        <div class="spinner mb-4"></div>
+        <h2 class="text-xl text-white">正在處理音訊匯出...</h2>
+        <p class="text-gray-400 text-sm">(請稍候)</p>
     </div>
 
 <script>
     const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const OfflineAudioContext = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    const STORAGE_KEY = 'HANDPAN_SAVED_SCORES';
+
     let ctx = null;
     let masterGain = null;
     let compressor = null;
+    let isAudioInitialized = false;
+    let savedScores = [];
+    let isRecordsListVisible = false;
+    let currentChordHighlight = null; // 追蹤當前高亮和弦
 
-    // 計算座標輔助函數 (半徑 R%, 角度 deg)
-    function getPos(deg, radius = 37) { 
+    // --- 和弦數據 (來自 PDF Page 3 的數字記譜法) ---
+    const CHORD_DATA = [
+        { name: "D-minor", labels: ["D", "1", "4", "6", "8"] },
+        { name: "Bb-major", labels: ["D", "2", "4", "6"] },
+        { name: "G-minor", labels: ["D", "2", "4", "7"] },
+        { name: "A-minor", labels: ["1", "3", "5", "8", "9"] },
+        { name: "C-major", labels: ["3", "5", "7", "9"] },
+        { name: "F-major", labels: ["1", "3", "6", "8", "9"] },
+    ];
+
+
+    // 音階資料 (D Kurd 10)
+    function getPos(deg, radius = 36) { 
         const rad = deg * (Math.PI / 180);
-        const left = 50 + radius * Math.cos(rad);
-        const top = 50 + radius * Math.sin(rad);
-        return { top, left };
+        return { top: 50 + radius * Math.sin(rad), left: 50 + radius * Math.cos(rad) };
     }
-
-    // 音階資料庫
-    const scales = {
-        d_minor_balanced: {
-            name: "D Kurd 10 (Balanced)",
-            notes: [
-                // 0: Ding (Center)
-                { note: "D3", freq: 146.83, label: "D", pos: { top: 50, left: 50 }, type: 'center-note' }, 
-                // 1: A3 - Bottom (90度)
-                { note: "A3", freq: 220.00, label: "1", pos: getPos(90), rotate: 0 },
-                // 2: Bb3 - Left (90 + 40 = 130度)
-                { note: "Bb3", freq: 233.08, label: "2", pos: getPos(130), rotate: 40 },
-                // 3: C4 - Right (90 - 40 = 50度)
-                { note: "C4", freq: 261.63, label: "3", pos: getPos(50), rotate: -40 },
-                // 4: D4 - Left (130 + 40 = 170度)
-                { note: "D4", freq: 293.66, label: "4", pos: getPos(170), rotate: 80 },
-                // 5: E4 - Right (50 - 40 = 10度)
-                { note: "E4", freq: 329.63, label: "5", pos: getPos(10), rotate: -80 },
-                // 6: F4 - Left (170 + 40 = 210度)
-                { note: "F4", freq: 349.23, label: "6", pos: getPos(210), rotate: 120 },
-                // 7: G4 - Right (10 - 40 = -30 -> 330度)
-                { note: "G4", freq: 392.00, label: "7", pos: getPos(330), rotate: -120 },
-                // 8: A4 - Left High (210 + 40 = 250度)
-                { note: "A4", freq: 440.00, label: "8", pos: getPos(250), rotate: 160 },
-                // 9: C5 - Right High (330 - 40 = 290度)
-                { note: "C5", freq: 523.25, label: "9", pos: getPos(290), rotate: -160 } 
-            ]
-        }
-    };
     
-    let currentScale = scales.d_minor_balanced;
-    let isLabelsVisible = true;
-    let recordBuffer = [];
+    const scaleNotes = [
+        { note: "D3", freq: 146.83, label: "D", pos: { top: 50, left: 50 }, type: 'center-note' }, 
+        { note: "A3", freq: 220.00, label: "1", pos: getPos(90), rotate: 0 },
+        { note: "Bb3", freq: 233.08, label: "2", pos: getPos(130), rotate: 40 },
+        { note: "C4", freq: 261.63, label: "3", pos: getPos(50), rotate: -40 },
+        { note: "D4", freq: 293.66, label: "4", pos: getPos(170), rotate: 80 },
+        { note: "E4", freq: 329.63, label: "5", pos: getPos(10), rotate: -80 },
+        { note: "F4", freq: 349.23, label: "6", pos: getPos(210), rotate: 120 },
+        { note: "G4", freq: 392.00, label: "7", pos: getPos(330), rotate: -120 },
+        { note: "A4", freq: 440.00, label: "8", pos: getPos(250), rotate: 160 },
+        { note: "C5", freq: 523.25, label: "9", pos: getPos(290), rotate: -160 } 
+    ];
 
+    let isLabelsVisible = true;
+    let recordBuffer = []; 
+    let recordStartTime = 0;
+    let isPlaying = false;
+    let playbackTimeouts = [];
+    
+    let lastRecordTime = 0;
+    const CHORD_TOLERANCE_MS = 50; 
+
+    // --- Core Audio & Tone Generation ---
     function initAudio() {
         if (ctx) return;
-        ctx = new AudioContext();
-        
+        ctx = new AudioContext({ latencyHint: 'interactive', sampleRate: 44100 });
         compressor = ctx.createDynamicsCompressor();
         compressor.threshold.setValueAtTime(-20, ctx.currentTime);
-        compressor.knee.setValueAtTime(30, ctx.currentTime);
         compressor.ratio.setValueAtTime(8, ctx.currentTime);
-        compressor.attack.setValueAtTime(0.002, ctx.currentTime);
-        compressor.release.setValueAtTime(0.2, ctx.currentTime);
-        
         masterGain = ctx.createGain();
         masterGain.gain.value = 0.9;
-        
         compressor.connect(masterGain);
         masterGain.connect(ctx.destination);
+        const buffer = ctx.createBuffer(1, 1, 22050);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start(0);
+        isAudioInitialized = true;
+        if (ctx.state === 'suspended') ctx.resume();
     }
 
-    function playTone(freq) {
-        if (!ctx) return;
-        const now = ctx.currentTime;
-        
-        // 1. 基頻
-        const osc1 = ctx.createOscillator();
-        const gain1 = ctx.createGain();
-        osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(freq, now);
-        gain1.gain.setValueAtTime(0, now);
-        gain1.gain.linearRampToValueAtTime(0.6, now + 0.03);
-        gain1.gain.exponentialRampToValueAtTime(0.001, now + 3.5);
-        osc1.connect(gain1);
-        gain1.connect(compressor);
-
-        // 2. 八度音
-        const osc2 = ctx.createOscillator();
-        const gain2 = ctx.createGain();
-        osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(freq * 2, now);
-        gain2.gain.setValueAtTime(0, now);
-        gain2.gain.linearRampToValueAtTime(0.3, now + 0.02);
-        gain2.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
-        osc2.connect(gain2);
-        gain2.connect(compressor);
-
-        // 3. 複合五度音
-        const osc3 = ctx.createOscillator();
-        const gain3 = ctx.createGain();
-        osc3.type = 'sine';
-        osc3.frequency.setValueAtTime(freq * 3, now);
-        gain3.gain.setValueAtTime(0, now);
-        gain3.gain.linearRampToValueAtTime(0.15, now + 0.02);
-        gain3.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
-        osc3.connect(gain3);
-        gain3.connect(compressor);
-
-        // 4. 敲擊聲
-        const oscClick = ctx.createOscillator();
-        const gainClick = ctx.createGain();
-        oscClick.type = 'triangle';
-        oscClick.frequency.setValueAtTime(freq * 4.5, now);
-        gainClick.gain.setValueAtTime(0, now);
-        gainClick.gain.linearRampToValueAtTime(0.05, now + 0.005);
-        gainClick.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-        oscClick.connect(gainClick);
-        gainClick.connect(compressor);
-
-        osc1.start(now);
-        osc2.start(now);
-        osc3.start(now);
-        oscClick.start(now);
-
-        const stopTime = now + 4;
-        osc1.stop(stopTime);
-        osc2.stop(stopTime);
-        osc3.stop(stopTime);
-        oscClick.stop(stopTime);
+    function playTone(freq, when = 0, audioContext = ctx, destination = compressor) {
+        if (!audioContext) return;
+        const now = when || audioContext.currentTime;
+        const attackTime = 0.005; 
+        const oscs = [
+            { type: 'sine', mult: 1, gain: 0.6, decay: 3.5 },
+            { type: 'sine', mult: 2, gain: 0.3, decay: 2.0 },
+            { type: 'sine', mult: 3, gain: 0.15, decay: 1.5 },
+            { type: 'triangle', mult: 4.5, gain: 0.05, decay: 0.05, isClick: true }
+        ];
+        oscs.forEach(o => {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            osc.type = o.type;
+            osc.frequency.setValueAtTime(freq * o.mult, now);
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(o.gain, now + attackTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + o.decay);
+            osc.connect(gain);
+            gain.connect(destination);
+            osc.start(now);
+            osc.stop(now + 4);
+        });
     }
-
-    // 調整手碟尺寸以適應容器
-    function adjustHandpanSize() {
-        const container = document.getElementById('handpan-container');
-        const handpan = document.getElementById('handpan');
-        
-        if (!container || !handpan) return;
-
-        // 獲取容器的可用尺寸
-        const containerWidth = container.clientWidth;
-        const containerHeight = container.clientHeight;
-
-        // 尺寸取容器寬高中的最小值，並扣除一點點邊距 (40px)
-        const size = Math.min(containerWidth, containerHeight) - 40; 
-
-        // 應用尺寸
-        handpan.style.width = `${size}px`;
-        handpan.style.height = `${size}px`;
-    }
+    
+    // --- Rendering and Events ---
 
     function renderHandpan() {
         const container = document.getElementById('handpan');
         const ding = container.querySelector('.ding');
-        
-        while (container.children.length > 1) {
-            container.removeChild(container.lastChild);
-        }
+        container.innerHTML = ''; 
+        const newDing = ding.cloneNode(true);
+        container.appendChild(newDing);
+        setupNoteElement(newDing, scaleNotes[0], 0);
 
-        // Ding
-        const dingData = currentScale.notes[0];
-        ding.innerHTML = isLabelsVisible 
-            ? `<div class="pointer-events-none"><div class="note-num">${dingData.label}</div><div class="note-name">${dingData.note}</div></div>` 
-            : '';
-            
-        // 使用 mousedown 和 touchstart 處理點擊/觸控
-        ding.onmousedown = (e) => triggerNote(e, 0);
-        ding.ontouchstart = (e) => triggerNote(e, 0);
-
-        // 周圍音符
-        const notes = currentScale.notes.slice(1);
-        
-        notes.forEach((n, index) => {
-            const actualNote = document.createElement('div');
-            actualNote.className = `note-field tone-field`;
-            
-            actualNote.style.left = `${n.pos.left}%`;
-            actualNote.style.top = `${n.pos.top}%`;
-            
-            if (n.rotate !== undefined) {
-                actualNote.style.transform = `translate(-50%, -50%) rotate(${n.rotate}deg)`;
-            }
-            
-            const textRotate = n.rotate ? -n.rotate : 0;
-
-            actualNote.innerHTML = isLabelsVisible 
-                ? `<div class="pointer-events-none" style="transform: rotate(${textRotate}deg)">
-                     <div class="note-num">${n.label}</div>
-                     <div class="note-name">${n.note}</div>
-                   </div>`
-                : '';
-            
-            const realIndex = index + 1;
-            actualNote.onmousedown = (e) => triggerNote(e, realIndex);
-            actualNote.ontouchstart = (e) => triggerNote(e, realIndex);
-
-            container.appendChild(actualNote);
+        scaleNotes.slice(1).forEach((n, i) => {
+            const el = document.createElement('div');
+            el.className = 'note-field tone-field';
+            el.style.left = `${n.pos.left}%`;
+            el.style.top = `${n.pos.top}%`;
+            if (n.rotate !== undefined) el.style.transform = `translate(-50%, -50%) rotate(${n.rotate}deg)`;
+            container.appendChild(el);
+            setupNoteElement(el, n, i + 1);
         });
-
         adjustHandpanSize();
+        // 重新渲染後恢復和弦高亮
+        if (currentChordHighlight) highlightChord(currentChordHighlight, false);
     }
 
-    function triggerNote(e, index) {
-        if (e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
+    function setupNoteElement(el, n, index) {
+        const textRotate = n.rotate ? -n.rotate : 0;
+        el.innerHTML = isLabelsVisible 
+            ? `<div class="pointer-events-none" style="transform: rotate(${textRotate}deg)">
+                 <div class="note-num">${n.label}</div>
+                 <div class="note-name">${n.note}</div>
+               </div>` 
+            : '';
+        const playHandler = (e) => {
+            if (e.type === 'touchstart') e.preventDefault(); 
+            triggerNote(index, el);
+        };
+        el.addEventListener('touchstart', playHandler, { passive: false });
+        el.addEventListener('mousedown', playHandler);
+        el.dataset.label = n.label; // For chord finding
+        el.dataset.index = index;
+    }
 
-        if (!ctx) initAudio();
-        if (ctx.state === 'suspended') ctx.resume();
-
-        const noteData = currentScale.notes[index];
+    function triggerNote(index, element) {
+        if (!isAudioInitialized) initAudio();
+        if (ctx && ctx.state === 'suspended') ctx.resume();
+        if (isPlaying) return; 
+        const noteData = scaleNotes[index];
         playTone(noteData.freq);
-
-        let target = e ? e.target : null;
-        if (target) {
-            if (target.classList.contains('note-num') || target.classList.contains('note-name') || target.classList.contains('pointer-events-none')) {
-                target = target.closest('.note-field');
+        if (element) {
+            element.classList.add('active');
+            setTimeout(() => element.classList.remove('active'), 100);
+        } else {
+            const allFields = document.querySelectorAll('.note-field');
+            const target = allFields[index]; 
+            if(target) {
+                target.classList.add('active');
+                setTimeout(() => target.classList.remove('active'), 100);
             }
         }
-        
-        if (!target) {
-             if (index === 0) target = document.querySelector('.ding');
-             else {
-                 const allNotes = document.querySelectorAll('.note-field');
-                 if (allNotes[index]) target = allNotes[index];
-             }
+        const now = Date.now();
+        let relativeTime;
+        if (recordBuffer.length === 0) {
+            recordStartTime = now;
+            relativeTime = 0;
+        } else {
+            if (now - lastRecordTime < CHORD_TOLERANCE_MS) {
+                relativeTime = recordBuffer[recordBuffer.length - 1].time;
+            } else {
+                relativeTime = now - recordStartTime;
+            }
         }
-
-        if (target) {
-            target.classList.add('active');
-            setTimeout(() => target.classList.remove('active'), 150);
-        }
-
-        updateRecord(noteData.label);
+        lastRecordTime = now;
+        recordBuffer.push({
+            label: noteData.label,
+            noteIndex: index,
+            time: relativeTime
+        });
+        updateRecordDisplay();
     }
 
-    // 記錄功能：根據螢幕方向調整排列方式
-    function updateRecord(label) {
-        recordBuffer.push(label);
-        
+    function adjustHandpanSize() {
+        const container = document.getElementById('handpan-container');
+        const handpan = document.getElementById('handpan');
+        if (!container || !handpan) return;
+        const size = Math.min(container.clientWidth, container.clientHeight) * 0.9; 
+        const finalSize = Math.min(size, 650); 
+        handpan.style.width = `${finalSize}px`;
+        handpan.style.height = `${finalSize}px`;
+    }
+
+    function updateRecordDisplay() {
         const display = document.getElementById('notationDisplay');
-        display.innerHTML = ''; 
-
-        // 判斷是否為「寬螢幕/橫向模式」(md breakpoint, 768px)
-        const isLandscape = window.innerWidth >= 768; 
-        
+        const isLandscape = window.innerWidth >= 768;
+        display.innerHTML = '';
         let lineBuffer = [];
-        recordBuffer.forEach((note, index) => {
-            
-            // 每個音符 Span
+        recordBuffer.forEach((item, idx) => {
             const span = document.createElement('span');
-            span.className = 'score-note inline-block font-mono';
-            span.className += note === 'D' ? ' text-amber-400 font-bold' : ' text-white';
-            span.textContent = note;
-            
+            span.id = `note-span-${idx}`;
+            span.className = 'score-note inline-block font-mono transition-colors duration-100';
+            span.className += item.label === 'D' ? ' text-amber-400 font-bold' : ' text-white';
+            span.textContent = item.label;
             if (isLandscape) {
-                // 橫向模式 (Sidebar)：4音一組，垂直排列
-                span.className += ' mx-1 my-0.5'; 
+                span.className += ' mx-1 my-0.5';
                 lineBuffer.push(span);
-
-                if (lineBuffer.length === 4 || index === recordBuffer.length - 1) {
-                    lineBuffer.forEach(s => display.appendChild(s));
-                    
-                    if (index !== recordBuffer.length - 1) {
-                        display.appendChild(document.createElement('br'));
-                    }
+                if (lineBuffer.length === 4 || idx === recordBuffer.length - 1) {
+                    const div = document.createElement('div');
+                    lineBuffer.forEach(s => div.appendChild(s));
+                    display.appendChild(div);
                     lineBuffer = [];
                 }
             } else {
-                // 直立模式 (Bottom Bar)：連續排列，每 4 音後加一個大間隔 
-                span.className += ' mx-2'; 
+                span.className += ' mx-2';
+                if (idx > 0 && recordBuffer[idx].time === recordBuffer[idx - 1].time) {
+                    span.className += ' -ml-1'; 
+                    span.textContent = item.label + ' '; 
+                } else {
+                    span.textContent = item.label;
+                    span.className += ' mr-2';
+                }
                 display.appendChild(span);
-
-                if ((index + 1) % 4 === 0) {
-                    // 加入一個寬間隔 (例如一個全形空格)，讓使用者知道這裡是組的結尾
+                if ((idx + 1) % 4 === 0 && (idx + 1) !== recordBuffer.length) {
                     const spacer = document.createElement('span');
-                    spacer.innerHTML = '&nbsp;&nbsp;&nbsp;'; 
+                    spacer.innerHTML = '&nbsp;&nbsp;'; 
                     display.appendChild(spacer);
                 }
             }
         });
+        if (isLandscape) display.scrollTop = display.scrollHeight;
+        else display.scrollLeft = display.scrollWidth;
+        const isDisabled = recordBuffer.length === 0;
+        document.getElementById('playRecord').disabled = isDisabled || isPlaying;
+        document.getElementById('exportWav').disabled = isDisabled || isPlaying;
+        document.getElementById('saveCurrent').disabled = isDisabled; 
+    }
 
-        if (isLandscape) {
-            // 橫向模式捲動到底部
-            display.scrollTop = display.scrollHeight;
-        } else {
-            // 直立模式捲動到最右邊 (處理水平捲動)
-            display.scrollLeft = display.scrollWidth;
+    function playRecording() {
+        if (recordBuffer.length === 0 || isPlaying) return;
+        if (!ctx) initAudio();
+        masterGain.gain.setValueAtTime(0.9, ctx.currentTime); 
+        isPlaying = true;
+        const playBtn = document.getElementById('playRecord');
+        playBtn.innerHTML = '<span>⏹</span> 停止';
+        playBtn.classList.replace('bg-green-700', 'bg-red-700');
+        playBtn.classList.replace('hover:bg-green-600', 'hover:bg-red-600');
+        document.getElementById('exportWav').disabled = true;
+        const now = ctx.currentTime; 
+        const startTime = now + 0.1; 
+        recordBuffer.forEach((item, idx) => {
+            const offsetSeconds = item.time / 1000; 
+            const playTime = startTime + offsetSeconds;
+            const freq = scaleNotes[item.noteIndex].freq;
+            playTone(freq, playTime);
+            const delayMs = item.time + 100; 
+            const t1 = setTimeout(() => {
+                triggerNote(item.noteIndex, null); 
+                const span = document.getElementById(`note-span-${idx}`);
+                if (span) {
+                    span.classList.add('playing-highlight');
+                    span.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+                    setTimeout(() => span.classList.remove('playing-highlight'), 200);
+                }
+            }, delayMs);
+            playbackTimeouts.push(t1);
+        });
+        const lastNoteTime = recordBuffer[recordBuffer.length - 1].time;
+        const endTimeout = setTimeout(stopPlayback, lastNoteTime + 500); 
+        playbackTimeouts.push(endTimeout);
+    }
+
+    function stopPlayback() {
+        if (!ctx || !masterGain) return;
+        masterGain.gain.cancelScheduledValues(ctx.currentTime);
+        masterGain.gain.setValueAtTime(0, ctx.currentTime);
+        playbackTimeouts.forEach(t => clearTimeout(t));
+        playbackTimeouts = [];
+        isPlaying = false;
+        const playBtn = document.getElementById('playRecord');
+        playBtn.innerHTML = '<span>▶</span> 播放';
+        playBtn.classList.replace('bg-red-700', 'bg-green-700');
+        playBtn.classList.replace('hover:bg-red-600', 'hover:bg-green-600');
+        setTimeout(() => {
+             masterGain.gain.setValueAtTime(0.9, ctx.currentTime);
+        }, 100);
+        document.getElementById('exportWav').disabled = recordBuffer.length === 0;
+        updateRecordDisplay(); 
+    }
+
+    // --- 和弦輔助功能 ---
+
+    function highlightChord(chord, isPlay = true) {
+        const allFields = document.querySelectorAll('.note-field');
+        
+        // 1. 清除舊的高亮
+        allFields.forEach(el => el.classList.remove('chord-highlight'));
+        currentChordHighlight = null;
+
+        if (!chord) return; // 如果沒有傳入和弦，直接結束 (清除模式)
+
+        currentChordHighlight = chord;
+        let chordFrequencies = [];
+
+        // 2. 高亮和弦組成的音符
+        chord.labels.forEach(label => {
+            const noteElement = Array.from(allFields).find(el => el.dataset.label === label);
+            if (noteElement) {
+                noteElement.classList.add('chord-highlight');
+                const noteIndex = parseInt(noteElement.dataset.index);
+                chordFrequencies.push(scaleNotes[noteIndex].freq);
+            }
+        });
+
+        // 3. 演奏和弦 (如果需要)
+        if (isPlay && chordFrequencies.length > 0) {
+            if (!ctx) initAudio();
+            chordFrequencies.forEach(freq => playTone(freq));
+            showToast(`演奏: ${chord.name}`);
         }
     }
 
-    document.getElementById('scaleSelect').addEventListener('change', (e) => {
-        currentScale = scales[e.target.value];
+    function renderChordList() {
+        const listDiv = document.getElementById('chordList');
+        listDiv.innerHTML = '';
+
+        CHORD_DATA.forEach(chord => {
+            const button = document.createElement('button');
+            button.className = 'text-xs px-2 py-1 rounded bg-emerald-700 hover:bg-emerald-600 transition border border-emerald-600 text-white';
+            button.textContent = chord.name;
+            button.onclick = () => {
+                // 如果點擊當前高亮的按鈕，則清除高亮
+                if (currentChordHighlight === chord) {
+                    highlightChord(null);
+                } else {
+                    highlightChord(chord, true);
+                }
+            };
+            listDiv.appendChild(button);
+        });
+    }
+
+
+    // --- Local Storage Functions ---
+
+    function loadScores() {
+        const data = localStorage.getItem(STORAGE_KEY);
+        try {
+            savedScores = data ? JSON.parse(data) : [];
+        } catch (e) {
+            console.error("Error loading scores:", e);
+            savedScores = [];
+        }
+        renderSavedScoresList();
+    }
+
+    function saveCurrentScore() {
+        if (recordBuffer.length === 0) {
+            showToast('目前記錄為空，無法儲存！');
+            return;
+        }
+
+        const scoreName = `練習 ${new Date().toLocaleTimeString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}`;
+        
+        savedScores.push({
+            id: Date.now(),
+            name: scoreName,
+            buffer: JSON.parse(JSON.stringify(recordBuffer)) 
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(savedScores));
+        showToast(`✅ 記錄 "${scoreName}" 已儲存！`);
+        renderSavedScoresList();
+    }
+
+    function loadSavedScore(id) {
+        const score = savedScores.find(s => s.id === id);
+        if (score) {
+            recordBuffer = JSON.parse(JSON.stringify(score.buffer)); 
+            recordStartTime = score.buffer[0] ? score.buffer[0].time : 0;
+            lastRecordTime = score.buffer.length > 0 ? score.buffer[score.buffer.length - 1].time : 0;
+            updateRecordDisplay();
+            showToast(`✅ 已載入記錄: ${score.name}`);
+        }
+    }
+
+    function deleteSavedScore(id) {
+        // 直接刪除，避免使用 confirm()
+        savedScores = savedScores.filter(s => s.id !== id);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(savedScores));
+        showToast('🗑️ 記錄已刪除！');
+        renderSavedScoresList();
+    }
+    
+    function renderSavedScoresList() {
+        const listDiv = document.getElementById('savedRecordsList');
+        listDiv.innerHTML = '';
+
+        if (savedScores.length === 0) {
+            listDiv.innerHTML = '<p class="text-xs text-gray-600 pt-2">目前沒有儲存的記錄。</p>';
+            return;
+        }
+
+        savedScores.slice().reverse().forEach(score => {
+            const el = document.createElement('div');
+            el.className = 'flex justify-between items-center py-1 border-b border-gray-800 last:border-b-0 group';
+            el.innerHTML = `
+                <span class="text-xs text-white truncate w-2/3 cursor-pointer hover:text-amber-400 transition" 
+                      data-id="${score.id}" title="${score.name}">
+                    ${score.name} (${score.buffer.length} notes)
+                </span>
+                <div class="flex gap-1">
+                    <button class="text-xs text-green-400 hover:text-green-300 transition px-1" 
+                            onclick="loadSavedScore(${score.id})" title="載入">
+                        載入
+                    </button>
+                    <button class="text-xs text-red-500 hover:text-red-400 transition px-1" 
+                            onclick="deleteSavedScore(${score.id})" title="刪除">
+                        刪除
+                    </button>
+                </div>
+            `;
+            listDiv.appendChild(el);
+        });
+    }
+
+    function toggleSavedRecords() {
+        isRecordsListVisible = !isRecordsListVisible;
+        const section = document.getElementById('savedRecordsSection');
+        const button = document.getElementById('openRecords');
+
+        if (isRecordsListVisible) {
+            section.style.maxHeight = '500px'; 
+            section.style.opacity = '1';
+            section.style.pointerEvents = 'auto';
+            button.classList.replace('bg-gray-500', 'bg-gray-400');
+        } else {
+            section.style.maxHeight = '0'; 
+            section.style.opacity = '0';
+            section.style.pointerEvents = 'none';
+            button.classList.replace('bg-gray-400', 'bg-gray-500');
+        }
+    }
+
+    // --- Utility Functions (WAV encoding, unchanged) ---
+    function floatTo16BitPCM(output, offset, input) { 
+        for (let i = 0; i < input.length; i++, offset += 2) {
+            let s = Math.max(-1, Math.min(1, input[i]));
+            output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+        }
+    }
+    function writeString(view, offset, string) { 
+        for (let i = 0; i < string.length; i++) {
+            view.setUint8(offset + i, string.charCodeAt(i));
+        }
+    }
+    function encodeWAV(samples, sampleRate) {
+        const buffer = new ArrayBuffer(44 + samples.length * 2);
+        const view = new DataView(buffer);
+        writeString(view, 0, 'RIFF'); view.setUint32(4, 36 + samples.length * 2, true); writeString(view, 8, 'WAVE');
+        writeString(view, 12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true); 
+        view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+        writeString(view, 36, 'data'); view.setUint32(40, samples.length * 2, true);
+        floatTo16BitPCM(view, 44, samples);
+        return view;
+    }
+
+    async function exportRecording() {
+        if (recordBuffer.length === 0 || isPlaying) { showToast('請先錄製一段樂譜！'); return; }
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        loadingOverlay.style.opacity = '1'; loadingOverlay.style.pointerEvents = 'auto';
+        try {
+            const lastNoteTime = recordBuffer[recordBuffer.length - 1].time;
+            const durationSeconds = (lastNoteTime / 1000) + 2.0; 
+            const sampleRate = 44100;
+            const bufferLength = Math.ceil(durationSeconds * sampleRate);
+            const offlineCtx = new OfflineAudioContext(1, bufferLength, sampleRate);
+            const offlineCompressor = offlineCtx.createDynamicsCompressor();
+            offlineCompressor.threshold.setValueAtTime(-20, 0);
+            offlineCompressor.ratio.setValueAtTime(8, 0);
+            offlineCompressor.connect(offlineCtx.destination);
+            const offlineMasterGain = offlineCtx.createGain();
+            offlineMasterGain.gain.value = 0.9;
+            offlineMasterGain.connect(offlineCompressor);
+            const startTime = 0.1; 
+            recordBuffer.forEach((item) => {
+                const offsetSeconds = item.time / 1000;
+                const playTime = startTime + offsetSeconds;
+                const freq = scaleNotes[item.noteIndex].freq;
+                playTone(freq, playTime, offlineCtx, offlineMasterGain);
+            });
+            const renderedBuffer = await offlineCtx.startRendering();
+            const audioData = renderedBuffer.getChannelData(0);
+            const wavDataView = encodeWAV(audioData, sampleRate);
+            const blob = new Blob([wavDataView], { type: 'audio/wav' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Handpan_Record_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.wav`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('✅ WAV 檔案匯出成功！');
+        } catch (error) {
+            console.error('匯出音訊錯誤:', error);
+            showToast(`❌ 匯出失敗: ${error.message}`);
+        } finally {
+            loadingOverlay.style.opacity = '0';
+            loadingOverlay.style.pointerEvents = 'none';
+        }
+    }
+
+    function copyToClipboard() {
+        if (recordBuffer.length === 0) { showToast('沒有可複製的記錄'); return; }
+        let text = "";
+        recordBuffer.forEach((item, idx) => {
+            text += item.label;
+            if (idx + 1 < recordBuffer.length && recordBuffer[idx].time === recordBuffer[idx + 1].time) {
+            } else if ((idx + 1) % 4 === 0) {
+                text += " | ";
+            } else {
+                text += " ";
+            }
+        });
+        text = text.trim();
+        if (text.endsWith('|')) text = text.slice(0, -1).trim();
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('樂譜已複製到剪貼簿！');
+        }).catch(() => {
+            try {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast('樂譜已複製到剪貼簿！(兼容模式)');
+            } catch (err) {
+                showToast('複製失敗，請手動複製。');
+            }
+        });
+    }
+
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.style.opacity = '1';
+        setTimeout(() => toast.style.opacity = '0', 2000);
+    }
+
+    // --- Event Listeners ---
+    document.getElementById('saveCurrent').addEventListener('click', saveCurrentScore);
+    document.getElementById('openRecords').addEventListener('click', toggleSavedRecords);
+    
+    document.getElementById('playRecord').addEventListener('click', () => {
+        if (isPlaying) stopPlayback();
+        else playRecording();
+    });
+
+    document.getElementById('copyRecord').addEventListener('click', copyToClipboard);
+    document.getElementById('exportWav').addEventListener('click', exportRecording);
+
+    document.getElementById('clearRecord').addEventListener('click', () => {
+        if (isPlaying) stopPlayback();
         recordBuffer = [];
-        document.getElementById('notationDisplay').innerHTML = '<span class="text-gray-600 text-sm italic">點擊音階開始記錄...</span>';
-        renderHandpan();
+        recordStartTime = 0;
+        lastRecordTime = 0; 
+        document.getElementById('notationDisplay').innerHTML = '<span class="text-gray-500 text-sm italic absolute top-0 left-0">點擊音階開始記錄...</span>';
+        updateRecordDisplay();
     });
 
     document.getElementById('toggleLabels').addEventListener('click', (e) => {
@@ -486,28 +821,27 @@
         renderHandpan();
     });
 
-    document.getElementById('clearRecord').addEventListener('click', () => {
-        recordBuffer = [];
-        document.getElementById('notationDisplay').innerHTML = '<span class="text-gray-600 text-sm italic">點擊音階開始記錄...</span>';
-    });
-
     const overlay = document.getElementById('startOverlay');
-    overlay.addEventListener('click', () => {
+    const startAudio = () => {
         initAudio();
         overlay.style.opacity = '0';
         setTimeout(() => overlay.remove(), 500);
-    });
+    };
+    overlay.addEventListener('click', startAudio);
+    overlay.addEventListener('touchstart', (e) => { e.preventDefault(); startAudio(); });
 
     window.onload = () => {
+        loadScores(); // 應用程式啟動時載入所有記錄
         renderHandpan();
-        // 監聽視窗大小變化，確保手碟始終保持在容器中心且不被裁切
+        renderChordList(); // 渲染和弦列表
         window.addEventListener('resize', () => {
             adjustHandpanSize();
-            // 重新渲染記錄，讓格式適應新螢幕方向
-            if(recordBuffer.length > 0) updateRecord(recordBuffer[recordBuffer.length-1]);
+            updateRecordDisplay();
         });
+        updateRecordDisplay(); 
     };
 
 </script>
 </body>
 </html>
+
