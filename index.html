@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>虛擬手碟鼓練習 (Virtual Handpan)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 防止手機上的長按選取與縮放 */
+        body {
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: "Noto Sans TC", sans-serif;
+            background-color: #1a1a1a; /* 深色背景，符合截圖氛圍 */
+            overflow: hidden;
+        }
+
+        /* 手碟主體質感 */
+        .handpan-body {
+            background: radial-gradient(circle at 30% 30%, #4a4a4a, #1a1a1a);
+            box-shadow: 
+                0 20px 50px rgba(0,0,0,0.8),
+                inset 0 10px 20px rgba(255,255,255,0.1);
+            border-radius: 50%;
+            position: relative;
+            transition: transform 0.1s ease;
+            
+            /* 關鍵修正：尺寸由 JS/Inline Style 控制，確保不被切掉 */
+        }
+
+        /* 音舌區域樣式 - 根據您的截圖調整質感 */
+        .note-field {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #555, #2a2a2a); /* 深灰質感 */
+            box-shadow: 
+                inset 1px 1px 3px rgba(255,255,255,0.15),
+                inset -2px -2px 5px rgba(0,0,0,0.6),
+                4px 4px 8px rgba(0,0,0,0.4);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: rgba(255,255,255,0.9);
+            font-weight: bold;
+            transition: all 0.05s;
+            transform: translate(-50%, -50%);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+            line-height: 1;
+            z-index: 5;
+        }
+
+        /* 按鈕尺寸優化 */
+        .note-field.tone-field {
+            width: 19%;
+            height: 15%; /* 橢圓形 */
+        }
+
+        /* 數字標籤樣式 */
+        .note-num {
+            font-size: 1.5rem;
+            color: #fbbf24; /* 琥珀色 (Amber-400) */
+        }
+
+        /* 音名標籤樣式 */
+        .note-name {
+            font-size: 0.75rem;
+            color: #9ca3af; /* 灰色 */
+            margin-top: 2px;
+        }
+
+        /* 中央 Ding 的樣式 */
+        .ding {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 26%;
+            height: 26%;
+            border-radius: 50%;
+            background: radial-gradient(circle at 40% 40%, #777, #222);
+            box-shadow: 
+                0 5px 15px rgba(0,0,0,0.5),
+                inset 0 0 20px rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+        
+        .ding .note-num {
+            font-size: 2.2rem;
+        }
+
+        /* 敲擊時的視覺回饋 */
+        .note-field.active, .ding.active {
+            background: radial-gradient(circle at 30% 30%, #888, #444);
+            transform: translate(-50%, -50%) scale(0.96);
+            box-shadow: 
+                0 0 20px rgba(251, 191, 36, 0.3),
+                inset 0 0 5px rgba(0,0,0,0.9);
+        }
+        
+        .note-field.active .note-num, .ding.active .note-num {
+            color: #fff;
+            text-shadow: 0 0 10px rgba(251, 191, 36, 0.8);
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col items-center justify-between text-gray-200">
+
+    <!-- 上方控制面板 (Header) -->
+    <div class="w-full p-3 bg-gray-900/80 backdrop-blur-sm flex justify-between items-center z-20 shadow-lg shrink-0 h-[60px]">
+        <h1 class="text-lg font-bold text-amber-500 tracking-wider">Handpan <span class="text-xs text-gray-400 hidden sm:inline">D Kurd 10</span></h1>
+        
+        <div class="flex gap-2">
+            <select id="scaleSelect" class="bg-gray-800 text-sm rounded px-3 py-1 border border-gray-700 focus:outline-none focus:border-amber-500">
+                <option value="d_minor_balanced">D Kurd 10 (標準配置)</option>
+            </select>
+            <button id="toggleLabels" class="bg-gray-700 hover:bg-gray-600 text-xs px-3 py-1 rounded transition">
+                隱藏標籤
+            </button>
+        </div>
+    </div>
+
+    <!-- 中間樂器容器 (Flex Grow) -->
+    <!-- 使用 flex-grow 佔據剩餘空間，並用 padding 防止貼邊 -->
+    <div class="flex-grow w-full flex items-center justify-center relative overflow-hidden p-4">
+        
+        <!-- 背景光暈裝飾 -->
+        <div class="absolute inset-0 opacity-20 pointer-events-none">
+            <div class="absolute top-1/4 left-1/4 w-64 h-64 bg-amber-600/20 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-600/20 rounded-full blur-3xl"></div>
+        </div>
+
+        <!-- 手碟本體 -->
+        <!-- 尺寸修正：寬高取 (90vw, 550px, 螢幕高度-180px) 三者中的最小值 -->
+        <!-- 180px 是預留給上方Header與下方記錄區的空間 -->
+        <div id="handpan" class="handpan-body" style="width: min(90vw, 550px, calc(100vh - 180px)); height: min(90vw, 550px, calc(100vh - 180px));">
+            <!-- 中心 Ding -->
+            <div class="ding note-field" data-note-index="0">
+                <!-- 內容由 JS 動態生成 -->
+            </div>
+            <!-- 其他音符將由 JS 動態生成 -->
+        </div>
+    </div>
+
+    <!-- 底部功能區 (Footer) -->
+    <div class="w-full flex flex-col items-center p-2 z-20 bg-gray-900/90 backdrop-blur-md shrink-0 pb-6 min-h-[100px]">
+        
+        <!-- 演奏記錄顯示 -->
+        <div class="w-full max-w-[600px] px-2 mb-2">
+            <div class="flex justify-between items-end mb-1 border-b border-gray-700 pb-1">
+                <span class="text-xs text-amber-500 font-bold uppercase tracking-widest">數字譜記錄 Record</span>
+                <button id="clearRecord" class="text-[10px] bg-gray-700 hover:bg-gray-600 text-gray-200 px-2 py-0.5 rounded transition">
+                    清除 Clear
+                </button>
+            </div>
+            <!-- 記錄區塊 -->
+            <div id="notationDisplay" class="w-full font-mono text-xl text-center tracking-wider text-white h-[2.4rem] overflow-y-auto whitespace-nowrap overflow-x-auto leading-snug scrollbar-hide">
+                <span class="text-gray-600 text-sm italic">點擊音階開始記錄...</span>
+            </div>
+        </div>
+
+        <p class="text-gray-500 text-[10px]">D3為D，A3為1 (正下方)</p>
+    </div>
+
+    <!-- 啟動遮罩 -->
+    <div id="startOverlay" class="fixed inset-0 bg-black/90 flex flex-col items-center justify-center z-50 cursor-pointer">
+        <div class="text-amber-500 text-6xl mb-4 animate-pulse">♫</div>
+        <h2 class="text-2xl text-white font-bold mb-2">點擊畫面開始</h2>
+        <p class="text-gray-400 text-sm">啟動 D Kurd 10 手碟引擎</p>
+    </div>
+
+<script>
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let ctx = null;
+    let masterGain = null;
+    let compressor = null;
+
+    // 計算座標輔助函數 (半徑 R%, 角度 deg)
+    // 0度=右, 90度=下, 180度=左, 270度=上
+    function getPos(deg, radius = 37) { // 稍微增加半徑(36->37)讓按鈕更外擴一點點，避免擠在一起
+        const rad = deg * (Math.PI / 180);
+        const left = 50 + radius * Math.cos(rad);
+        const top = 50 + radius * Math.sin(rad);
+        return { top, left };
+    }
+
+    // 音階資料庫
+    // 1號音固定在 90度 (正下方)
+    // 9等分 = 40度間隔
+    const scales = {
+        d_minor_balanced: {
+            name: "D Kurd 10 (Balanced)",
+            notes: [
+                // 0: Ding (Center)
+                { note: "D3", freq: 146.83, label: "D", pos: { top: 50, left: 50 }, type: 'center-note' }, 
+                
+                // 1: A3 - Bottom (90度)
+                { note: "A3", freq: 220.00, label: "1", pos: getPos(90), rotate: 0 },
+                
+                // 2: Bb3 - Left (90 + 40 = 130度)
+                { note: "Bb3", freq: 233.08, label: "2", pos: getPos(130), rotate: 40 },
+                
+                // 3: C4 - Right (90 - 40 = 50度)
+                { note: "C4", freq: 261.63, label: "3", pos: getPos(50), rotate: -40 },
+                
+                // 4: D4 - Left (130 + 40 = 170度)
+                { note: "D4", freq: 293.66, label: "4", pos: getPos(170), rotate: 80 },
+                
+                // 5: E4 - Right (50 - 40 = 10度)
+                { note: "E4", freq: 329.63, label: "5", pos: getPos(10), rotate: -80 },
+                
+                // 6: F4 - Left (170 + 40 = 210度)
+                { note: "F4", freq: 349.23, label: "6", pos: getPos(210), rotate: 120 },
+                
+                // 7: G4 - Right (10 - 40 = -30 -> 330度)
+                { note: "G4", freq: 392.00, label: "7", pos: getPos(330), rotate: -120 },
+                
+                // 8: A4 - Left High (210 + 40 = 250度)
+                { note: "A4", freq: 440.00, label: "8", pos: getPos(250), rotate: 160 },
+                
+                // 9: C5 - Right High (330 - 40 = 290度)
+                { note: "C5", freq: 523.25, label: "9", pos: getPos(290), rotate: -160 } 
+            ]
+        }
+    };
+    
+    let currentScale = scales.d_minor_balanced;
+    let isLabelsVisible = true;
+    let recordBuffer = [];
+
+    function initAudio() {
+        if (ctx) return;
+        ctx = new AudioContext();
+        
+        compressor = ctx.createDynamicsCompressor();
+        compressor.threshold.setValueAtTime(-20, ctx.currentTime);
+        compressor.knee.setValueAtTime(30, ctx.currentTime);
+        compressor.ratio.setValueAtTime(8, ctx.currentTime);
+        compressor.attack.setValueAtTime(0.002, ctx.currentTime);
+        compressor.release.setValueAtTime(0.2, ctx.currentTime);
+        
+        masterGain = ctx.createGain();
+        masterGain.gain.value = 0.9;
+        
+        compressor.connect(masterGain);
+        masterGain.connect(ctx.destination);
+    }
+
+    function playTone(freq) {
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        
+        // 1. 基頻
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(freq, now);
+        gain1.gain.setValueAtTime(0, now);
+        gain1.gain.linearRampToValueAtTime(0.6, now + 0.03);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 3.5);
+        osc1.connect(gain1);
+        gain1.connect(compressor);
+
+        // 2. 八度音
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(freq * 2, now);
+        gain2.gain.setValueAtTime(0, now);
+        gain2.gain.linearRampToValueAtTime(0.3, now + 0.02);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
+        osc2.connect(gain2);
+        gain2.connect(compressor);
+
+        // 3. 複合五度音
+        const osc3 = ctx.createOscillator();
+        const gain3 = ctx.createGain();
+        osc3.type = 'sine';
+        osc3.frequency.setValueAtTime(freq * 3, now);
+        gain3.gain.setValueAtTime(0, now);
+        gain3.gain.linearRampToValueAtTime(0.15, now + 0.02);
+        gain3.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+        osc3.connect(gain3);
+        gain3.connect(compressor);
+
+        // 4. 敲擊聲
+        const oscClick = ctx.createOscillator();
+        const gainClick = ctx.createGain();
+        oscClick.type = 'triangle';
+        oscClick.frequency.setValueAtTime(freq * 4.5, now);
+        gainClick.gain.setValueAtTime(0, now);
+        gainClick.gain.linearRampToValueAtTime(0.05, now + 0.005);
+        gainClick.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        oscClick.connect(gainClick);
+        gainClick.connect(compressor);
+
+        osc1.start(now);
+        osc2.start(now);
+        osc3.start(now);
+        oscClick.start(now);
+
+        const stopTime = now + 4;
+        osc1.stop(stopTime);
+        osc2.stop(stopTime);
+        osc3.stop(stopTime);
+        oscClick.stop(stopTime);
+    }
+
+    function renderHandpan() {
+        const container = document.getElementById('handpan');
+        const ding = container.querySelector('.ding');
+        
+        while (container.children.length > 1) {
+            container.removeChild(container.lastChild);
+        }
+
+        // Ding
+        const dingData = currentScale.notes[0];
+        ding.innerHTML = isLabelsVisible 
+            ? `<div class="pointer-events-none"><div class="note-num">${dingData.label}</div><div class="note-name">${dingData.note}</div></div>` 
+            : '';
+            
+        ding.onclick = (e) => triggerNote(e, 0);
+        ding.ontouchstart = (e) => triggerNote(e, 0);
+
+        // 周圍音符
+        const notes = currentScale.notes.slice(1);
+        
+        notes.forEach((n, index) => {
+            const actualNote = document.createElement('div');
+            actualNote.className = `note-field tone-field`;
+            
+            actualNote.style.left = `${n.pos.left}%`;
+            actualNote.style.top = `${n.pos.top}%`;
+            
+            if (n.rotate !== undefined) {
+                actualNote.style.transform = `translate(-50%, -50%) rotate(${n.rotate}deg)`;
+            }
+            
+            const textRotate = n.rotate ? -n.rotate : 0;
+
+            actualNote.innerHTML = isLabelsVisible 
+                ? `<div class="pointer-events-none" style="transform: rotate(${textRotate}deg)">
+                     <div class="note-num">${n.label}</div>
+                     <div class="note-name">${n.note}</div>
+                   </div>`
+                : '';
+            
+            const realIndex = index + 1;
+            actualNote.onmousedown = (e) => triggerNote(e, realIndex);
+            actualNote.ontouchstart = (e) => triggerNote(e, realIndex);
+
+            container.appendChild(actualNote);
+        });
+    }
+
+    function triggerNote(e, index) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        if (!ctx) initAudio();
+        if (ctx.state === 'suspended') ctx.resume();
+
+        const noteData = currentScale.notes[index];
+        playTone(noteData.freq);
+
+        let target = e ? e.target : null;
+        if (target) {
+            if (target.classList.contains('note-num') || target.classList.contains('note-name') || target.classList.contains('pointer-events-none')) {
+                target = target.closest('.note-field');
+            }
+        }
+        
+        if (!target) {
+             if (index === 0) target = document.querySelector('.ding');
+             else {
+                 const allNotes = document.querySelectorAll('.note-field');
+                 if (allNotes[index]) target = allNotes[index];
+             }
+        }
+
+        if (target) {
+            target.classList.add('active');
+            setTimeout(() => target.classList.remove('active'), 150);
+        }
+
+        updateRecord(noteData.label);
+    }
+
+    function updateRecord(label) {
+        const display = document.getElementById('notationDisplay');
+        if (recordBuffer.length === 0) {
+            display.innerHTML = '';
+        }
+        recordBuffer.push(label);
+        
+        const span = document.createElement('span');
+        span.className = 'mx-2 inline-block'; // 增加間距
+        if (label === 'D') {
+            span.className += ' text-amber-400 font-bold';
+        } else {
+            span.className += ' text-white';
+        }
+        span.textContent = label;
+        display.appendChild(span);
+        display.scrollLeft = display.scrollWidth; // 自動捲動到最右邊
+    }
+
+    document.getElementById('scaleSelect').addEventListener('change', (e) => {
+        currentScale = scales[e.target.value];
+        recordBuffer = [];
+        document.getElementById('notationDisplay').innerHTML = '<span class="text-gray-600 text-sm italic">點擊音階開始記錄...</span>';
+        renderHandpan();
+    });
+
+    document.getElementById('toggleLabels').addEventListener('click', (e) => {
+        isLabelsVisible = !isLabelsVisible;
+        e.target.textContent = isLabelsVisible ? '隱藏標籤' : '顯示標籤';
+        renderHandpan();
+    });
+
+    document.getElementById('clearRecord').addEventListener('click', () => {
+        recordBuffer = [];
+        document.getElementById('notationDisplay').innerHTML = '<span class="text-gray-600 text-sm italic">點擊音階開始記錄...</span>';
+    });
+
+    const overlay = document.getElementById('startOverlay');
+    overlay.addEventListener('click', () => {
+        initAudio();
+        overlay.style.opacity = '0';
+        setTimeout(() => overlay.remove(), 500);
+    });
+
+    window.onload = renderHandpan;
+
+</script>
+</body>
+</html>
