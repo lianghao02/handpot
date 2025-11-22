@@ -6,13 +6,22 @@
     <title>虛擬手碟鼓練習 (Virtual Handpan)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* 隱藏 Chrome/Safari 上的捲軸 */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        
         /* 防止手機上的長按選取與縮放 */
         body {
             touch-action: none;
             user-select: none;
             -webkit-user-select: none;
             font-family: "Noto Sans TC", sans-serif;
-            background-color: #1a1a1a; /* 深色背景，符合截圖氛圍 */
+            background-color: #1a1a1a;
             overflow: hidden;
         }
 
@@ -25,15 +34,14 @@
             border-radius: 50%;
             position: relative;
             transition: transform 0.1s ease;
-            
-            /* 關鍵修正：尺寸由 JS/Inline Style 控制，確保不被切掉 */
+            /* 尺寸由 JS 動態調整 */
         }
 
-        /* 音舌區域樣式 - 根據您的截圖調整質感 */
+        /* 音舌區域樣式 */
         .note-field {
             position: absolute;
             border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, #555, #2a2a2a); /* 深灰質感 */
+            background: radial-gradient(circle at 30% 30%, #555, #2a2a2a);
             box-shadow: 
                 inset 1px 1px 3px rgba(255,255,255,0.15),
                 inset -2px -2px 5px rgba(0,0,0,0.6),
@@ -61,13 +69,13 @@
         /* 數字標籤樣式 */
         .note-num {
             font-size: 1.5rem;
-            color: #fbbf24; /* 琥珀色 (Amber-400) */
+            color: #fbbf24;
         }
 
         /* 音名標籤樣式 */
         .note-name {
             font-size: 0.75rem;
-            color: #9ca3af; /* 灰色 */
+            color: #9ca3af;
             margin-top: 2px;
         }
 
@@ -103,6 +111,13 @@
             color: #fff;
             text-shadow: 0 0 10px rgba(251, 191, 36, 0.8);
         }
+
+        /* 側邊欄記錄的單一音符樣式 */
+        .score-note {
+            font-size: 1.25rem; /* 降低字體，適應側邊欄 */
+            line-height: 1.8;
+        }
+
     </style>
 </head>
 <body class="h-screen w-screen flex flex-col items-center justify-between text-gray-200">
@@ -121,46 +136,49 @@
         </div>
     </div>
 
-    <!-- 中間樂器容器 (Flex Grow) -->
-    <!-- 使用 flex-grow 佔據剩餘空間，並用 padding 防止貼邊 -->
-    <div class="flex-grow w-full flex items-center justify-center relative overflow-hidden p-4">
+    <!-- 核心內容區: 響應式佈局 (直立堆疊 / 橫置分割) -->
+    <div class="w-full flex-grow flex flex-col md:flex-row relative">
         
-        <!-- 背景光暈裝飾 -->
-        <div class="absolute inset-0 opacity-20 pointer-events-none">
-            <div class="absolute top-1/4 left-1/4 w-64 h-64 bg-amber-600/20 rounded-full blur-3xl"></div>
-            <div class="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-600/20 rounded-full blur-3xl"></div>
-        </div>
-
-        <!-- 手碟本體 -->
-        <!-- 尺寸修正：寬高取 (90vw, 550px, 螢幕高度-180px) 三者中的最小值 -->
-        <!-- 180px 是預留給上方Header與下方記錄區的空間 -->
-        <div id="handpan" class="handpan-body" style="width: min(90vw, 550px, calc(100vh - 180px)); height: min(90vw, 550px, calc(100vh - 180px));">
-            <!-- 中心 Ding -->
-            <div class="ding note-field" data-note-index="0">
-                <!-- 內容由 JS 動態生成 -->
+        <!-- 左側/中央: 手碟容器 (橫置佔 3/4 空間，直立佔全部剩餘空間) -->
+        <div id="handpan-container" class="flex-grow flex items-center justify-center relative overflow-hidden p-4 md:w-3/4">
+            
+            <!-- 背景光暈裝飾 -->
+            <div class="absolute inset-0 opacity-20 pointer-events-none">
+                <div class="absolute top-1/4 left-1/4 w-64 h-64 bg-amber-600/20 rounded-full blur-3xl"></div>
+                <div class="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-600/20 rounded-full blur-3xl"></div>
             </div>
-            <!-- 其他音符將由 JS 動態生成 -->
-        </div>
-    </div>
 
-    <!-- 底部功能區 (Footer) -->
-    <div class="w-full flex flex-col items-center p-2 z-20 bg-gray-900/90 backdrop-blur-md shrink-0 pb-6 min-h-[100px]">
-        
-        <!-- 演奏記錄顯示 -->
-        <div class="w-full max-w-[600px] px-2 mb-2">
-            <div class="flex justify-between items-end mb-1 border-b border-gray-700 pb-1">
+            <!-- 手碟本體 - 尺寸由 JS 動態計算 -->
+            <div id="handpan" class="handpan-body shrink-0">
+                <!-- 中心 Ding -->
+                <div class="ding note-field" data-note-index="0">
+                    <!-- 內容由 JS 動態生成 -->
+                </div>
+                <!-- 其他音符將由 JS 動態生成 -->
+            </div>
+        </div>
+
+        <!-- 右側/下方: 數字譜記錄區 -->
+        <!-- 直立模式下：佔滿寬度，最小高度 120px (min-h-[120px])，最大高度 25vh -->
+        <!-- 橫置模式下：佔 1/4 寬度，填滿高度 -->
+        <div id="record-sidebar" class="w-full md:w-1/4 md:flex-none p-4 bg-gray-900/90 backdrop-blur-md shadow-inner md:shadow-none 
+                                        min-h-[120px] max-h-[25vh] md:max-h-full flex flex-col shrink-0">
+            
+            <div class="flex justify-between items-end mb-2 border-b border-gray-700 pb-1 shrink-0">
                 <span class="text-xs text-amber-500 font-bold uppercase tracking-widest">數字譜記錄 Record</span>
                 <button id="clearRecord" class="text-[10px] bg-gray-700 hover:bg-gray-600 text-gray-200 px-2 py-0.5 rounded transition">
                     清除 Clear
                 </button>
             </div>
-            <!-- 記錄區塊 -->
-            <div id="notationDisplay" class="w-full font-mono text-xl text-center tracking-wider text-white h-[2.4rem] overflow-y-auto whitespace-nowrap overflow-x-auto leading-snug scrollbar-hide">
+            
+            <!-- 記錄區塊 - 允許垂直捲動 (Landscape) 或水平捲動 (Portrait) -->
+            <div id="notationDisplay" class="font-mono tracking-wider text-white flex-grow overflow-auto whitespace-nowrap md:whitespace-normal scrollbar-hide">
                 <span class="text-gray-600 text-sm italic">點擊音階開始記錄...</span>
             </div>
+            
+            <!-- 提示資訊 -->
+            <p class="text-gray-500 text-[10px] mt-2 shrink-0">D3為D，A3為1 (正下方)</p>
         </div>
-
-        <p class="text-gray-500 text-[10px]">D3為D，A3為1 (正下方)</p>
     </div>
 
     <!-- 啟動遮罩 -->
@@ -177,8 +195,7 @@
     let compressor = null;
 
     // 計算座標輔助函數 (半徑 R%, 角度 deg)
-    // 0度=右, 90度=下, 180度=左, 270度=上
-    function getPos(deg, radius = 37) { // 稍微增加半徑(36->37)讓按鈕更外擴一點點，避免擠在一起
+    function getPos(deg, radius = 37) { 
         const rad = deg * (Math.PI / 180);
         const left = 50 + radius * Math.cos(rad);
         const top = 50 + radius * Math.sin(rad);
@@ -186,39 +203,28 @@
     }
 
     // 音階資料庫
-    // 1號音固定在 90度 (正下方)
-    // 9等分 = 40度間隔
     const scales = {
         d_minor_balanced: {
             name: "D Kurd 10 (Balanced)",
             notes: [
                 // 0: Ding (Center)
                 { note: "D3", freq: 146.83, label: "D", pos: { top: 50, left: 50 }, type: 'center-note' }, 
-                
                 // 1: A3 - Bottom (90度)
                 { note: "A3", freq: 220.00, label: "1", pos: getPos(90), rotate: 0 },
-                
                 // 2: Bb3 - Left (90 + 40 = 130度)
                 { note: "Bb3", freq: 233.08, label: "2", pos: getPos(130), rotate: 40 },
-                
                 // 3: C4 - Right (90 - 40 = 50度)
                 { note: "C4", freq: 261.63, label: "3", pos: getPos(50), rotate: -40 },
-                
                 // 4: D4 - Left (130 + 40 = 170度)
                 { note: "D4", freq: 293.66, label: "4", pos: getPos(170), rotate: 80 },
-                
                 // 5: E4 - Right (50 - 40 = 10度)
                 { note: "E4", freq: 329.63, label: "5", pos: getPos(10), rotate: -80 },
-                
                 // 6: F4 - Left (170 + 40 = 210度)
                 { note: "F4", freq: 349.23, label: "6", pos: getPos(210), rotate: 120 },
-                
                 // 7: G4 - Right (10 - 40 = -30 -> 330度)
                 { note: "G4", freq: 392.00, label: "7", pos: getPos(330), rotate: -120 },
-                
                 // 8: A4 - Left High (210 + 40 = 250度)
                 { note: "A4", freq: 440.00, label: "8", pos: getPos(250), rotate: 160 },
-                
                 // 9: C5 - Right High (330 - 40 = 290度)
                 { note: "C5", freq: 523.25, label: "9", pos: getPos(290), rotate: -160 } 
             ]
@@ -307,6 +313,25 @@
         oscClick.stop(stopTime);
     }
 
+    // 調整手碟尺寸以適應容器
+    function adjustHandpanSize() {
+        const container = document.getElementById('handpan-container');
+        const handpan = document.getElementById('handpan');
+        
+        if (!container || !handpan) return;
+
+        // 獲取容器的可用尺寸
+        const containerWidth = container.clientWidth;
+        const containerHeight = container.clientHeight;
+
+        // 尺寸取容器寬高中的最小值，並扣除一點點邊距 (40px)
+        const size = Math.min(containerWidth, containerHeight) - 40; 
+
+        // 應用尺寸
+        handpan.style.width = `${size}px`;
+        handpan.style.height = `${size}px`;
+    }
+
     function renderHandpan() {
         const container = document.getElementById('handpan');
         const ding = container.querySelector('.ding');
@@ -321,7 +346,8 @@
             ? `<div class="pointer-events-none"><div class="note-num">${dingData.label}</div><div class="note-name">${dingData.note}</div></div>` 
             : '';
             
-        ding.onclick = (e) => triggerNote(e, 0);
+        // 使用 mousedown 和 touchstart 處理點擊/觸控
+        ding.onmousedown = (e) => triggerNote(e, 0);
         ding.ontouchstart = (e) => triggerNote(e, 0);
 
         // 周圍音符
@@ -353,6 +379,8 @@
 
             container.appendChild(actualNote);
         });
+
+        adjustHandpanSize();
     }
 
     function triggerNote(e, index) {
@@ -390,23 +418,59 @@
         updateRecord(noteData.label);
     }
 
+    // 記錄功能：根據螢幕方向調整排列方式
     function updateRecord(label) {
-        const display = document.getElementById('notationDisplay');
-        if (recordBuffer.length === 0) {
-            display.innerHTML = '';
-        }
         recordBuffer.push(label);
         
-        const span = document.createElement('span');
-        span.className = 'mx-2 inline-block'; // 增加間距
-        if (label === 'D') {
-            span.className += ' text-amber-400 font-bold';
+        const display = document.getElementById('notationDisplay');
+        display.innerHTML = ''; 
+
+        // 判斷是否為「寬螢幕/橫向模式」(md breakpoint, 768px)
+        const isLandscape = window.innerWidth >= 768; 
+        
+        let lineBuffer = [];
+        recordBuffer.forEach((note, index) => {
+            
+            // 每個音符 Span
+            const span = document.createElement('span');
+            span.className = 'score-note inline-block font-mono';
+            span.className += note === 'D' ? ' text-amber-400 font-bold' : ' text-white';
+            span.textContent = note;
+            
+            if (isLandscape) {
+                // 橫向模式 (Sidebar)：4音一組，垂直排列
+                span.className += ' mx-1 my-0.5'; 
+                lineBuffer.push(span);
+
+                if (lineBuffer.length === 4 || index === recordBuffer.length - 1) {
+                    lineBuffer.forEach(s => display.appendChild(s));
+                    
+                    if (index !== recordBuffer.length - 1) {
+                        display.appendChild(document.createElement('br'));
+                    }
+                    lineBuffer = [];
+                }
+            } else {
+                // 直立模式 (Bottom Bar)：連續排列，每 4 音後加一個大間隔 
+                span.className += ' mx-2'; 
+                display.appendChild(span);
+
+                if ((index + 1) % 4 === 0) {
+                    // 加入一個寬間隔 (例如一個全形空格)，讓使用者知道這裡是組的結尾
+                    const spacer = document.createElement('span');
+                    spacer.innerHTML = '&nbsp;&nbsp;&nbsp;'; 
+                    display.appendChild(spacer);
+                }
+            }
+        });
+
+        if (isLandscape) {
+            // 橫向模式捲動到底部
+            display.scrollTop = display.scrollHeight;
         } else {
-            span.className += ' text-white';
+            // 直立模式捲動到最右邊 (處理水平捲動)
+            display.scrollLeft = display.scrollWidth;
         }
-        span.textContent = label;
-        display.appendChild(span);
-        display.scrollLeft = display.scrollWidth; // 自動捲動到最右邊
     }
 
     document.getElementById('scaleSelect').addEventListener('change', (e) => {
@@ -434,7 +498,15 @@
         setTimeout(() => overlay.remove(), 500);
     });
 
-    window.onload = renderHandpan;
+    window.onload = () => {
+        renderHandpan();
+        // 監聽視窗大小變化，確保手碟始終保持在容器中心且不被裁切
+        window.addEventListener('resize', () => {
+            adjustHandpanSize();
+            // 重新渲染記錄，讓格式適應新螢幕方向
+            if(recordBuffer.length > 0) updateRecord(recordBuffer[recordBuffer.length-1]);
+        });
+    };
 
 </script>
 </body>
