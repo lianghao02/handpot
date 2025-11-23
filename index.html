@@ -48,7 +48,7 @@
             max-height: 650px;
         }
 
-        /* --- 音舌熱區：22% --- */
+        /* --- 音舌熱區 --- */
         .note-field {
             position: absolute;
             border-radius: 50%;
@@ -103,8 +103,19 @@
             box-shadow: 0 0 10px #34d399, inset 0 0 8px rgba(52, 211, 163, 0.8);
             transform: translate(-50%, -50%) scale(1.02);
         }
+
+        .note-field.practice-target {
+            box-shadow: 0 0 0 4px #3b82f6, 0 0 20px #3b82f6; 
+            z-index: 40;
+            animation: pulse-target 1.5s infinite;
+        }
+        @keyframes pulse-target {
+            0% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 0 0px rgba(59, 130, 246, 0.7); }
+            70% { transform: translate(-50%, -50%) scale(1.05); box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+            100% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 0 0px rgba(59, 130, 246, 0); }
+        }
         
-        /* --- Bottom Sheet 優化 --- */
+        /* --- Bottom Sheet --- */
         .bottom-sheet {
             position: fixed;
             bottom: 0;
@@ -133,7 +144,7 @@
             height: 5px;
             background-color: #4b5563;
             border-radius: 3px;
-            margin: 8px auto 4px; /* 減少下方 margin */
+            margin: 8px auto 4px; 
             cursor: pointer;
         }
 
@@ -149,22 +160,16 @@
             transition: opacity 0.3s ease;
             z-index: 40;
         }
-        .overlay-dim.is-visible {
-            opacity: 1;
-            pointer-events: auto;
-        }
+        .overlay-dim.is-visible { opacity: 1; pointer-events: auto; }
 
         .score-note { font-size: 1.25rem; line-height: 1.8; display: inline-block; }
-        .playing-highlight {
-            color: #ef4444 !important; font-weight: 900 !important; transform: scale(1.2);
-        }
+        .playing-highlight { color: #ef4444 !important; font-weight: 900 !important; transform: scale(1.2); }
 
         .spinner {
             border: 4px solid rgba(255, 255, 255, 0.1);
             border-top: 4px solid #fbbf24;
             border-radius: 50%;
-            width: 20px;
-            height: 20px;
+            width: 20px; height: 20px;
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -182,8 +187,7 @@
         </div>
     </div>
 
-    <!-- Handpan Area (位置再上移，配合增高的底部) -->
-    <!-- 在手機模式下，padding-top 增加到 85px，並使用 justify-start 確保靠上 -->
+    <!-- Handpan Area -->
     <div id="handpan-container" class="w-full flex-grow flex items-start justify-center relative overflow-hidden p-4 pt-[85px] md:pt-20 md:items-center">
         <div id="handpan" class="handpan-body shrink-0">
             <div class="ding note-field" data-note-index="0"></div>
@@ -193,23 +197,40 @@
     <!-- Overlay -->
     <div id="overlayDim" class="overlay-dim"></div>
 
-    <!-- Bottom Sheet (高度增加) -->
-    <!-- 設定 translateY 讓它預設露出更多內容 (約 260px) -->
-    <div id="recordSidebar" class="bottom-sheet" style="transform: translateY(calc(100% - 260px));">
+    <!-- Bottom Sheet -->
+    <div id="recordSidebar" class="bottom-sheet" style="transform: translateY(calc(100% - 280px));">
         <div class="bottom-sheet-drag-handle" id="dragHandle"></div>
         
         <div class="bottom-sheet-content p-4 pt-0">
             
-            <!-- 和弦輔助 (更緊湊) -->
+            <!-- 歌曲與和弦 -->
             <div class="mb-2 border-b border-gray-700 pb-2">
                 <div class="flex justify-between items-center mb-1">
-                    <span class="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">Chords (PDF Guide)</span>
-                    <span class="text-[10px] text-gray-500 md:hidden">↑ 展開歷史記錄</span>
+                    <span class="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">Songs (Tutorial)</span>
+                    <span class="text-[10px] text-gray-500 md:hidden">↑ 上拉展開</span>
+                </div>
+                
+                <!-- 歌曲選單 -->
+                <div class="flex gap-2 mb-2">
+                    <select id="songSelect" class="bg-gray-800 text-white text-xs rounded border border-gray-600 px-2 py-1 flex-grow focus:outline-none focus:border-emerald-500">
+                        <option value="" disabled selected>-- 選擇練習曲 --</option>
+                    </select>
+                    <button id="demoSong" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs px-3 py-1 rounded whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed">
+                        ▶ 示範
+                    </button>
+                    <button id="practiceSong" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1 rounded whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed">
+                        🎯 跟彈
+                    </button>
+                </div>
+
+                <!-- 和弦按鈕 -->
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">Chords</span>
                 </div>
                 <div id="chordList" class="flex flex-wrap gap-1 mt-0.5"></div>
             </div>
 
-            <!-- 1. 記錄控制 (儲存/列表) -->
+            <!-- 記錄控制 -->
             <div class="flex flex-wrap justify-between items-center mb-2 gap-2 shrink-0">
                 <span class="text-[10px] text-amber-500 font-bold uppercase tracking-widest">Record</span>
                 <div class="flex gap-2">
@@ -217,14 +238,14 @@
                         <span>💾</span> 儲存
                     </button>
                     <button id="openRecords" class="text-xs bg-gray-500 hover:bg-gray-400 text-white px-2 py-1 rounded flex items-center gap-1">
-                        <span>📖</span> 記錄列表
+                        <span>📖</span> 列表
                     </button>
                 </div>
             </div>
             
-            <!-- 2. 播放與匯出按鈕 (與上方合併或緊鄰) -->
+            <!-- 播放與匯出 -->
             <div class="flex flex-wrap justify-between items-center mb-2 border-b border-gray-700 pb-2 gap-2 shrink-0">
-                <div class="flex gap-1.5 w-full justify-between"> <!-- 使用 justify-between 撐開按鈕 -->
+                <div class="flex gap-1.5 w-full justify-between">
                     <button id="playRecord" class="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1.5 rounded flex-1 flex justify-center items-center gap-1 disabled:opacity-50">
                         <span>▶</span> 播放
                     </button>
@@ -232,7 +253,7 @@
                         <span>📥</span> WAV
                     </button>
                     <button id="copyRecord" class="text-xs bg-blue-700 hover:bg-blue-600 text-white px-3 py-1.5 rounded flex-1 flex justify-center items-center gap-1">
-                        <span>📋</span> 複製
+                        <span>📋</span>
                     </button>
                     <button id="clearRecord" class="text-xs bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-1.5 rounded flex-1 flex justify-center items-center">
                         清除
@@ -240,12 +261,12 @@
                 </div>
             </div>
 
-            <!-- 3. 簡譜顯示 (現在預設可見) -->
+            <!-- 簡譜顯示 -->
             <div id="notationDisplay" class="font-mono tracking-wider text-white overflow-x-auto whitespace-nowrap scrollbar-hide relative border-b border-gray-700 pb-2 min-h-[40px] mb-2 bg-gray-800/50 rounded px-2 pt-1">
-                <span class="text-gray-500 text-sm italic absolute top-1 left-2">點擊音階開始記錄...</span>
+                <span id="notationPlaceholder" class="text-gray-500 text-sm italic absolute top-1 left-2">點擊音階開始記錄...</span>
             </div>
             
-            <!-- 歷史記錄列表 (只在展開時看到更多) -->
+            <!-- 歷史記錄列表 -->
             <div id="savedRecordsSection" class="overflow-y-auto scrollbar-hide">
                  <h3 class="text-sm font-bold text-gray-400 mb-2 border-b border-gray-800 pb-1">歷史記錄</h3>
                  <div id="savedRecordsList">
@@ -256,7 +277,6 @@
         </div>
     </div>
 
-    <!-- Start Overlay -->
     <div id="startOverlay" class="fixed inset-0 bg-black/95 flex flex-col items-center justify-center z-50 cursor-pointer touch-manipulation">
         <div class="text-amber-500 text-6xl mb-4 animate-pulse">♫</div>
         <h2 class="text-2xl text-white font-bold mb-2">點擊啟用音效</h2>
@@ -266,12 +286,10 @@
         </div>
     </div>
 
-    <!-- Toast -->
     <div id="toast" class="fixed top-20 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded shadow-lg text-sm transition-opacity opacity-0 pointer-events-none z-50">
         訊息
     </div>
     
-    <!-- Loading -->
     <div id="loadingOverlay" class="fixed inset-0 bg-black/70 flex flex-col items-center justify-center z-50 transition-opacity duration-300 opacity-0 pointer-events-none">
         <div class="spinner mb-4"></div>
         <h2 class="text-xl text-white">處理中...</h2>
@@ -296,13 +314,68 @@
     const CHORD_TOLERANCE_MS = 50; 
     let isSheetExpanded = false;
 
+    // --- 跟彈模式變數 ---
+    let isPracticeMode = false;
+    let currentPracticeSong = null;
+    let practiceNoteIndex = 0;
+
     const CHORD_DATA = [
-        { name: "D-minor", labels: ["D", "1", "4", "6", "8"] },
-        { name: "Bb-major", labels: ["D", "2", "4", "6"] },
-        { name: "G-minor", labels: ["D", "2", "4", "7"] },
-        { name: "A-minor", labels: ["1", "3", "5", "8", "9"] },
-        { name: "C-major", labels: ["3", "5", "7", "9"] },
-        { name: "F-major", labels: ["1", "3", "6", "8", "9"] },
+        { name: "D-min", labels: ["D", "1", "4", "6", "8"] },
+        { name: "Bb-maj", labels: ["D", "2", "4", "6"] },
+        { name: "G-min", labels: ["D", "2", "4", "7"] },
+        { name: "A-min", labels: ["1", "3", "5", "8", "9"] },
+        { name: "C-maj", labels: ["3", "5", "7", "9"] },
+        { name: "F-maj", labels: ["1", "3", "6", "8", "9"] },
+    ];
+
+    // 歌曲資料庫 (含節奏)
+    const SONGS_DATA = [
+        {
+            name: "月光 (Moonlight)",
+            bpm: 120, // 預設速度
+            notes: [
+                "1","4","6",  "1","4","6",  "1","4","6",  "1","4","6",
+                "2","4","6",  "2","4","6",  "2","4","7",  "2","4","7",
+                "1","4","7",  "1","4","6",  "1","4","5",  "1","4","5",
+                "D","1","4",  "1","4","6",  "1","4","6",  "8","4","6","8",
+                "8","4","7",  "2","4","7",  "2","4","7",  "8","4","7",
+                "8","4","6",  "1","4","6",  "7","4","7",  "2","4","7",
+                "8","3","6",  "1","3","6",  "7","3","5",  "9","3","5",
+                "6","3","6",  "1","3","6",  "1","3","6",  "1","3","6",
+                "6","3","6",  "3","6","8",  "6","8","9",  "6","1","3"
+            ]
+        },
+        {
+            name: "鈴兒響叮噹 (Jingle Bells)",
+            bpm: 180, // 輕快
+            notes: [
+                {label:"3",beat:1}, {label:"3",beat:1}, {label:"3",beat:2},
+                {label:"3",beat:1}, {label:"3",beat:1}, {label:"3",beat:2},
+                {label:"3",beat:1}, {label:"5",beat:1}, {label:"1",beat:1}, {label:"2",beat:1}, {label:"3",beat:4},
+                {label:"4",beat:1}, {label:"4",beat:1}, {label:"4",beat:1.5}, {label:"4",beat:0.5}, {label:"4",beat:1}, {label:"3",beat:1}, {label:"3",beat:1}, {label:"3",beat:0.5}, {label:"3",beat:0.5},
+                {label:"3",beat:1}, {label:"2",beat:1}, {label:"2",beat:1}, {label:"3",beat:1}, {label:"2",beat:2}, {label:"5",beat:2}
+            ]
+        },
+        {
+            name: "月亮代表我的心",
+            bpm: 90, // 深情慢板
+            notes: [
+                // Intro
+                {label:"5",beat:1}, {label:"6",beat:1}, {label:"8",beat:2},
+                {label:"5",beat:1}, {label:"6",beat:1}, {label:"8",beat:2},
+                {label:"5",beat:1}, {label:"3",beat:1}, {label:"2",beat:1}, {label:"1",beat:1}, {label:"2",beat:4},
+                // Verse 1
+                {label:"5",beat:1.5}, {label:"3",beat:0.5}, {label:"5",beat:2}, // 你問我...
+                {label:"1",beat:1}, {label:"7",beat:1}, {label:"6",beat:1}, {label:"5",beat:1}, // 愛你有多深
+                {label:"5",beat:1}, {label:"4",beat:1}, {label:"3",beat:1}, {label:"2",beat:1}, // 我愛你有...
+                {label:"2",beat:4}, // 幾分
+                // Verse 2
+                {label:"3",beat:1.5}, {label:"1",beat:0.5}, {label:"3",beat:2}, // 我的情...
+                {label:"5",beat:1}, {label:"4",beat:1}, {label:"3",beat:1}, {label:"2",beat:1}, // 也真
+                {label:"2",beat:1}, {label:"1",beat:1}, {label:"D",beat:1}, {label:"1",beat:1}, // 月亮代表
+                {label:"1",beat:4} // 我的心
+            ]
+        }
     ];
 
     function getPos(deg, radius = 36) { 
@@ -376,6 +449,7 @@
         const newDing = ding.cloneNode(true);
         container.appendChild(newDing);
         setupNoteElement(newDing, scaleNotes[0], 0);
+
         scaleNotes.slice(1).forEach((n, i) => {
             const el = document.createElement('div');
             el.className = 'note-field tone-field';
@@ -410,9 +484,12 @@
     function triggerNote(index, element) {
         if (!isAudioInitialized) initAudio();
         if (ctx && ctx.state === 'suspended') ctx.resume();
-        if (isPlaying) return; 
+        
+        if (isPlaying && !isPracticeMode) return; 
+
         const noteData = scaleNotes[index];
         playTone(noteData.freq);
+
         if (element) {
             element.classList.add('active');
             setTimeout(() => element.classList.remove('active'), 100);
@@ -424,6 +501,24 @@
                 setTimeout(() => target.classList.remove('active'), 100);
             }
         }
+
+        // --- 跟彈模式邏輯 ---
+        if (isPracticeMode && currentPracticeSong) {
+            const targetNote = currentPracticeSong.notes[practiceNoteIndex];
+            const targetLabel = targetNote.label || targetNote; // 支援新舊格式
+            
+            if (noteData.label === targetLabel) {
+                practiceNoteIndex++;
+                if (practiceNoteIndex >= currentPracticeSong.notes.length) {
+                    showToast("🎉 練習完成！");
+                    stopPracticeMode();
+                } else {
+                    highlightPracticeTarget();
+                }
+            }
+        }
+
+        // --- 記錄邏輯 ---
         const now = Date.now();
         let relativeTime;
         if (recordBuffer.length === 0) {
@@ -450,26 +545,42 @@
         const handpan = document.getElementById('handpan');
         if (!container || !handpan) return;
         
-        // 增加預留空間，避免被變高的 Bottom Sheet 遮擋
-        // 預設露出高度約 260px，所以我們要確保手碟在上方區域
-        const bottomSheetHeight = 260; 
+        const bottomSheetHeight = 280; 
         const availableHeight = window.innerHeight - 60 - bottomSheetHeight; 
         const isMobile = window.innerWidth < 768;
-        const sizeFactor = isMobile ? 0.9 : 0.9; 
+        const sizeFactor = isMobile ? 0.95 : 0.9; 
 
-        // 確保手碟不會超過剩餘的可用高度
         let size = Math.min(container.clientWidth, availableHeight) * sizeFactor; 
-        
-        // 最小值保護 (避免在極小螢幕完全消失)
-        size = Math.max(size, 280); 
+        size = Math.max(size, 260); 
         const finalSize = Math.min(size, 650); 
         
         handpan.style.width = `${finalSize}px`;
         handpan.style.height = `${finalSize}px`;
+        
+        if (isMobile) {
+            container.style.alignItems = 'flex-start'; 
+            container.style.paddingTop = '80px'; 
+        } else {
+            container.style.alignItems = 'center';
+            container.style.paddingTop = '16px';
+        }
     }
 
     function updateRecordDisplay() {
         const display = document.getElementById('notationDisplay');
+        const placeholder = document.getElementById('notationPlaceholder');
+        
+        if (recordBuffer.length === 0) {
+            display.innerHTML = '';
+            if(placeholder) {
+                placeholder.style.display = 'block';
+                display.appendChild(placeholder);
+            } else {
+                display.innerHTML = '<span id="notationPlaceholder" class="text-gray-500 text-sm italic absolute top-1 left-2">點擊音階開始記錄...</span>';
+            }
+            return;
+        }
+        
         display.innerHTML = '';
         recordBuffer.forEach((item, idx) => {
             const span = document.createElement('span');
@@ -572,6 +683,119 @@
         }
     }
 
+    // --- 歌曲載入/示範/跟彈 ---
+    function initSongSelect() {
+        const select = document.getElementById('songSelect');
+        if(SONGS_DATA.length === 0) return; 
+
+        SONGS_DATA.forEach((song, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.text = song.name;
+            select.appendChild(option);
+        });
+
+        const checkSelection = () => {
+            const hasSelection = select.value !== "";
+            document.getElementById('demoSong').disabled = !hasSelection;
+            document.getElementById('practiceSong').disabled = !hasSelection;
+        };
+        
+        select.addEventListener('change', checkSelection);
+        checkSelection(); 
+    }
+
+    function loadSongForDemo() {
+        const select = document.getElementById('songSelect');
+        if (!select.value) return;
+        const song = SONGS_DATA[select.value];
+        
+        recordBuffer = [];
+        recordStartTime = 0;
+        let currentTime = 0;
+        // BPM 轉毫秒: (60000 / BPM) = 一拍的ms
+        const beatMs = song.bpm ? (60000 / song.bpm) : 400; 
+
+        song.notes.forEach(note => {
+            // 兼容舊格式 (純字串) 和新格式 (物件含節奏)
+            const label = note.label || note; 
+            const beats = note.beat || 1; 
+            
+            const noteIndex = scaleNotes.findIndex(n => n.label === label);
+            if (noteIndex !== -1) {
+                recordBuffer.push({
+                    label: label,
+                    noteIndex: noteIndex,
+                    time: currentTime
+                });
+            }
+            // 累加時間：拍數 * 每拍時長
+            currentTime += beats * beatMs;
+        });
+        
+        updateRecordDisplay();
+        playRecording();
+        showToast(`正在示範: ${song.name}`);
+    }
+
+    function startPracticeMode() {
+        const select = document.getElementById('songSelect');
+        if (!select.value) return;
+        const song = SONGS_DATA[select.value];
+
+        stopPlayback(); 
+        isPracticeMode = true;
+        currentPracticeSong = song;
+        practiceNoteIndex = 0;
+        
+        recordBuffer = [];
+        updateRecordDisplay();
+        
+        showToast("🎯 跟彈模式開始！請跟隨藍色游標");
+        highlightPracticeTarget();
+        
+        document.getElementById('songSelect').disabled = true;
+        document.getElementById('demoSong').disabled = true;
+        document.getElementById('practiceSong').innerHTML = "❌ 結束";
+        document.getElementById('practiceSong').onclick = stopPracticeMode;
+        document.getElementById('practiceSong').classList.replace('bg-blue-600', 'bg-red-600');
+        document.getElementById('practiceSong').classList.replace('hover:bg-blue-500', 'hover:bg-red-500');
+    }
+
+    function stopPracticeMode() {
+        isPracticeMode = false;
+        currentPracticeSong = null;
+        practiceNoteIndex = 0;
+        
+        const allFields = document.querySelectorAll('.note-field');
+        allFields.forEach(el => el.classList.remove('practice-target'));
+
+        document.getElementById('songSelect').disabled = false;
+        document.getElementById('demoSong').disabled = false;
+        
+        const btn = document.getElementById('practiceSong');
+        btn.innerHTML = "🎯 跟彈";
+        btn.onclick = startPracticeMode;
+        btn.classList.replace('bg-red-600', 'bg-blue-600');
+        btn.classList.replace('hover:bg-red-500', 'hover:bg-blue-500');
+    }
+
+    function highlightPracticeTarget() {
+        const allFields = document.querySelectorAll('.note-field');
+        allFields.forEach(el => el.classList.remove('practice-target'));
+        
+        if (!currentPracticeSong || practiceNoteIndex >= currentPracticeSong.notes.length) return;
+
+        const targetNote = currentPracticeSong.notes[practiceNoteIndex];
+        const targetLabel = targetNote.label || targetNote;
+        
+        const targetEl = Array.from(allFields).find(el => el.dataset.label === targetLabel);
+        
+        if (targetEl) {
+            targetEl.classList.add('practice-target');
+        }
+    }
+
     function renderChordList() {
         const listDiv = document.getElementById('chordList');
         listDiv.innerHTML = '';
@@ -659,8 +883,7 @@
             button.classList.replace('bg-gray-500', 'bg-gray-400');
         } else {
             sheet.classList.remove('is-expanded');
-            // 修改預設露出高度，確保顯示和弦+播放器+簡譜
-            sheet.style.transform = 'translateY(calc(100% - 260px))'; 
+            sheet.style.transform = 'translateY(calc(100% - 280px))'; 
             overlay.classList.remove('is-visible');
             button.classList.replace('bg-gray-400', 'bg-gray-500');
         }
@@ -741,13 +964,17 @@
         e.target.textContent = isLabelsVisible ? '隱藏標籤' : '顯示標籤';
         renderHandpan();
     });
+    
+    // New Listeners for Song/Practice
+    document.getElementById('demoSong').addEventListener('click', loadSongForDemo);
+    document.getElementById('practiceSong').addEventListener('click', startPracticeMode);
 
     const start = () => { initAudio(); document.getElementById('startOverlay').style.opacity='0'; setTimeout(()=>document.getElementById('startOverlay').remove(),500); };
     document.getElementById('startOverlay').addEventListener('click', start);
     document.getElementById('startOverlay').addEventListener('touchstart', (e)=>{e.preventDefault(); start();});
 
     window.onload = () => {
-        loadScores(); renderHandpan(); renderChordList();
+        loadScores(); renderHandpan(); renderChordList(); initSongSelect();
         window.addEventListener('resize', () => { adjustHandpanSize(); updateRecordDisplay(); });
         adjustHandpanSize(); 
         if (window.innerWidth < 768) toggleSavedRecords(false);
